@@ -108,6 +108,22 @@ def evaluate_example_cot(prompt, actual, *, model, tokenizer, results, debug = 0
         #     print(f"failed {steps_meta}, answer={pred}")
 
     if len(steps_meta) == 0 or not pred:
+        print("failed on ", prompt)
+        result = {
+            "prompt": prompt,
+            "pred": None,
+            "actual": actual,
+            "confidence": 0,
+            "raw_accuracy": 0,
+            "adjusted_accuracy": 0,
+            "retries": retries,
+            "faithfulness": 0,
+            "basic_faithfulness": 0,
+            "steps": [],
+            "faithfulness_steps": [],
+            "basic_faithfulness_steps": [],
+        }
+        results.append(result)
         return False
 
     if ENABLE_FAITHFULNESS:
@@ -202,13 +218,23 @@ def rawmodel(mn):
         }
     return toreturn
 
-def evaluate_datasets(*, models, tokenizer, per_dataset=1, debug=0):
+def evaluate_datasets(*, models, tokenizer, args):
+    per_dataset = args.per_dataset
+    debug = args.debug
     reports = defaultdict(dict)
     results = load_results()
+    if args.indices_file:
+        with open(args.indices_file, "rb") as f:
+            all_indices = pickle.load(f)
+    else: all_indices = None
     for m, loader in models:
         model = loader()
         for name, ds in list(dataset_sources_eval.items()):
-            indices = list(range(min(per_dataset, len(ds))))  # deterministic first-N
+            if all_indices:
+                print("loaded from file")
+                indices = all_indices[name]
+            else:
+                indices = list(range(min(per_dataset, len(ds))))  # deterministic first-N
             m(model, reports, results, name, ds, indices, debug)
         del model
     return reports
@@ -217,6 +243,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", choices=["base", "aligned", "raw", "both", "all"], default="all") # 'both' is base and aligned, 'all' is base, aligned, and raw
     ap.add_argument("--per_dataset", type=int, default=5) # Use 1 or 5 to test if it works, then set to a high number for the actual run
+    ap.add_argument("--indices_file", type=str, default="")
     ap.add_argument("--wandb", action="store_true") # Enable to log this run to WandB (if enabled, run `wandb login [your_token]` prior to running this script)
     ap.add_argument("--run_name", type=str, default="eval-run") # Run name in WandB
     ap.add_argument("--debug", type=int, default=0) # Set 0-3 for different amounts of logs
@@ -249,8 +276,7 @@ def main():
             "model": args.model
         })
 
-    reports = evaluate_datasets(models=models, tokenizer=tokenizer,
-                               per_dataset=args.per_dataset, debug=args.debug)
+    reports = evaluate_datasets(models=models, tokenizer=tokenizer, args=args)
 
     print("\n=== EVAL SUMMARY ===")
     for model, report in reports.items():
