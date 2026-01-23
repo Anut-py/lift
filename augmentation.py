@@ -3,7 +3,7 @@ import torch
 from util import extract_steps, AnswerEOS
 import random
 
-FORMAT_INSTRUCTIONS = """IMPORTANT: Answer each question properly. Express your answer as either: a single number with no units, commas, or currency symbols; a single capital letter; or a single boolean with the first letter capitalized.
+FORMAT_INSTRUCTIONS = """IMPORTANT: Answer each question properly. Express your answer as either: a single number with no units, commas, or currency symbols; a single capital letter; or a single boolean with the first letter capitalized ("True" or "False").
 
 Q: If Alice has 3 apples and Bob gives her 2 more, how many apples does she have?
 Reasoning:

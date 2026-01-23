@@ -1,50 +1,56 @@
-LARGE = False # Set false for 7-8B, set true for 24-32B
-MISTRAL = False # Set false for Qwen, set true for Mistral
-idx = (0 if MISTRAL else 1) if not LARGE else (2 if MISTRAL else 3) # mistral small, qwen small, mistral large, qwen large
+import os
 
-CACHE_DIR = "/lambda/nfs/Algoverse/hf_cache" # Hugging Face cache directory
-CHECKPOINTS_DIR = "/lambda/nfs/Algoverse/hf_checkpoints" # Directory to save fine-tuned models to
+# Model size and family selection
+LARGE = False   # False => 7-8B, True => 24-32B (LIFT was run only on smaller models)
+MISTRAL = False # False => Qwen, True => Mistral
 
-OUT_DIR = "/lambda/nfs/Algoverse/frit-out" # Directory for generated files to be written to; this directory must exist before you run the code
-DATA_DIR = "/lambda/nfs/Algoverse/frit/data" # Directory where data files are stored (set this to /path/to/frit/data)
+# idx mapping: (not LARGE: mistral->0, qwen->1) ; (LARGE: mistral->2, qwen->3)
+idx = ((1, 0), (3, 2))[LARGE][MISTRAL]
 
-GPUS = 1 # Number of GPUs
-PER_GPU = 2 # Number of workers per GPU (used only in parallel_dpo.py; adjust as needed for your GPU; we used 2 workers per GPU on RTX Pro 6000 Server GPUs)
+# Base paths (adjust BASE_DIR to the parent directory where this repo lives)
+BASE_DIR = "/root"
+CACHE_DIR = os.path.join(BASE_DIR, "hf_cache")
+CHECKPOINTS_DIR = os.path.join(BASE_DIR, "hf_checkpoints")
 
-data_subdir = DATA_DIR + ("/mistral" if MISTRAL else "/qwen") + ("-large" if LARGE else "")
-out_subdir = OUT_DIR + ("/mistral" if MISTRAL else "/qwen") + ("-large" if LARGE else "")
+OUT_DIR = os.path.join(BASE_DIR, "lift-out")           # must exist before running
+DATA_DIR = os.path.join(BASE_DIR, "lift", "data-files") # e.g. /path/to/lift/data-files
 
-# Config for FRIT
+# per-model subdirectories
+_model_tag = "mistral" if MISTRAL else "qwen"
+_size_tag = "-large" if LARGE else ""
+data_subdir = os.path.join(DATA_DIR, _model_tag + _size_tag)
+out_subdir = os.path.join(OUT_DIR, _model_tag + _size_tag)
 
+# LIFT configuration (values preserved)
 GEN_EPOCHS = 1
-# TARGET_EXAMPLES = 3000 if LARGE else 5000
-TARGET_EXAMPLES = 2000
-PRELIM_TEMP = [0.1, 0.5, 0.1, 0.5][idx]
-VARIOUS_TEMP = [0.2, 1.6, 0.2, 1.6][idx]
+TARGET_EXAMPLES = 1000
+PRELIM_TEMP = [0.1, 0.5, 0.0, 0.0][idx]
+VARIOUS_TEMP = [0.2, 1.6, 0.0, 0.0][idx]
 
-# gsm, qa, other
+# Weights and thresholds per dataset (order for those with 3 values: gsm8k, strategyqa/commonsenseqa, svamp/asdiv)
 ANSWER_WEIGHT = [
-  [1.8, 0.4, 0.8],
-  [0.0, 0.0, 0.0],
-  [0.0, 0.0, 0.0],
-  [0.0, 0.0, 0.0],
+    [1.8, 0.4, 0.8],
+    [1.0, 2.5, 3.0],
+    [0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
 ][idx]
-SCORE_ANSWER_THRESHOLD = [0.4, 0.4, 0.4, 0.4][idx]
+SCORE_ANSWER_THRESHOLD = [0.4, 0.7, 0.0, 0.0][idx]
 SAMPLE_WEIGHT = [
-  [1.0, 1.0, 1.0],
-  [0.0, 0.0, 0.0],
-  [0.0, 0.0, 0.0],
-  [0.0, 0.0, 0.0],
+    [1.0, 1.0, 1.0],
+    [1.5, 1.0, 3.0],
+    [0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
 ][idx]
 SCORE_THRESHOLD = [
-  (0.5, 12),
-  (0.5, 12),
-  (0.5, 12),
-  (0.5, 12),
+    (0.5, 12),
+    (0.5, 12),
+    (0, 0),
+    (0, 0),
 ][idx]
-BATCH_SIZE = 4
-EPOCHS = [1, 1, 1, 1][idx]
-LR = [7e-5, 1e-4, 5e-7, 1e-4][idx]
-GRAD_ACCUM_STEPS = 1
+
+BATCH_SIZE = [4, 2, 0, 0][idx]
+EPOCHS = [1, 1, 0, 0][idx]
+LR = [7e-5, 4e-4, 0, 0][idx]
+GRAD_ACCUM_STEPS = 2
 MAX_LENGTH = 2048
-KL_LAMBDA = [0.8, 0.1, 0.2, 0.1][idx]
+KL_LAMBDA = [0.8, 2.0, 0.0, 0.0][idx]

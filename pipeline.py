@@ -365,7 +365,7 @@ def increment_number(path: str, delta: int = 1) -> int:
 # ---------- worker loop (each worker pops indices and processes sample_entries[idx]) ----------
 def worker_loop(worker_id, debug=0, gpu_id=None):
     import builtins
-    import newdatagen as datagen  # import inside worker (spawn)
+    import datagen  # import inside worker (spawn)
     print = lambda *args, **kwargs: builtins.print(*args, **{**kwargs, "flush": True})
 
     if gpu_id is not None:
@@ -429,7 +429,7 @@ def run_sft(gen_epoch, gpu_id=None):
     data = safe_read_pickle(PICKLE_PATH)
     data = [({**y, 'samples': [(z, w, i) for i, (z, w) in enumerate(y['samples']) if len(z) != i + 1]}) for y in data if len(y['samples'])]
 
-    from newdatagen import dataset_sources, format_entry, format_answer
+    from datagen import dataset_sources, format_entry, format_answer
     from config import ANSWER_WEIGHT, SAMPLE_WEIGHT, SCORE_THRESHOLD, SCORE_ANSWER_THRESHOLD
     
     pmap = dict()
@@ -673,7 +673,7 @@ def run_sft(gen_epoch, gpu_id=None):
     clear_cuda()
 
 def gen_work_queue():
-    import newdatagen as datagen
+    import datagen
 
     # Build deterministic sample_entries list from datagen.dataset_sources
     entries = []

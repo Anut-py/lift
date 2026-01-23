@@ -75,5 +75,5 @@ def make_sft_example(prompt, n=10, prelim_temp=0.5, various_temp=1.6, debug=0):
         }
     except Exception as e:
         print(traceback.format_exc())
-        print(f"Making dpo example failed with error: {e}")
+        print(f"Making sft example failed with error: {e}")
         return None

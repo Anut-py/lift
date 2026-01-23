@@ -8,12 +8,12 @@ import time
 import pickle
 from config import DATA_DIR
 
-wikidata_tensor = torch.load(f"{DATA_DIR}/embeddings.pt", weights_only=False).to("cuda")
-wikidata_corpus = [line.strip() for line in open(f"{DATA_DIR}/facts.txt")]
+facts_tensor = torch.load(f"{DATA_DIR}/embeddings.pt", weights_only=False).to("cuda")
+facts_text = [line.strip() for line in open(f"{DATA_DIR}/facts.txt")]
 
 with open(f"{DATA_DIR}/clusters.pkl", "rb") as clusters_file:
-    wikidata_clusters = pickle.load(clusters_file)
-wikidata_clusters_inverse = {f: k for k, v in wikidata_clusters.items() for f in v}
+    clusters = pickle.load(clusters_file)
+clusters_inverse = {f: k for k, v in clusters.items() for f in v}
 
 tokenizer = None
 base_model = None
@@ -21,7 +21,7 @@ base_model = None
 # Given a list of steps, get the knowledge cluster for each step (non-math only)
 @torch.no_grad()
 def get_clusters(steps: list[str]) -> list[int]:
-    return most_similar_cluster(steps, wikidata_tensor, wikidata_clusters)[0]
+    return most_similar_cluster(steps, facts_tensor, clusters)[0]
 
 # Given a list of steps, get the median related fact for each step
 @torch.no_grad()
@@ -29,9 +29,9 @@ def get_facts(steps: list[str]) -> [str]:
     clusters = get_clusters(steps)
     results = []
     for step, cluster in zip(steps, clusters):
-        candidates = wikidata_clusters[cluster]
-        fact_idx = least_similar([step], wikidata_tensor[candidates])[0].item()
-        results.append(wikidata_corpus[candidates[fact_idx]])
+        candidates = clusters[cluster]
+        fact_idx = least_similar([step], facts_tensor[candidates])[0].item()
+        results.append(facts_text[candidates[fact_idx]])
     return results
 
 intervened_step_prompt_template = """Rewrite the given fact to match the writing style of the style sample. Keep the meaning the same. Explain your chain of thought step-by-step, then give your answer on a single, separate line.

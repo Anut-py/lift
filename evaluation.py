@@ -1,5 +1,5 @@
 # IMPORTANT: This script resumes using OUT_DIR/results-(run name).pkl. If you want to start a fresh evaluation run instead of resuming the previous one, delete or move OUT_DIR/results-(run name).pkl prior to running.
-# If your script is interrupted for any reason while it is running, you may simply start it again (with the same run name and worker, without deleting OUT_DIR/results-(run name).pkl) and it will resume where it left off
+# If your script is interrupted for any reason while it is running, you may simply start it again (with the same run name, without deleting OUT_DIR/results-(run name).pkl) and it will resume where it left off
 
 import argparse
 from datasets import load_dataset
@@ -244,14 +244,12 @@ def main():
     ap.add_argument("--model", choices=["base", "aligned", "raw", "both", "all"], default="all") # 'both' is base and aligned, 'all' is base, aligned, and raw
     ap.add_argument("--per_dataset", type=int, default=5) # Use 1 or 5 to test if it works, then set to a high number for the actual run
     ap.add_argument("--indices_file", type=str, default="")
-    ap.add_argument("--wandb", action="store_true") # Enable to log this run to WandB (if enabled, run `wandb login [your_token]` prior to running this script)
-    ap.add_argument("--run_name", type=str, default="eval-run") # Run name in WandB
+    ap.add_argument("--run_name", type=str, default="eval-run") # Run name; results will be stored in config.out_subdir/results-run-name.pkl
     ap.add_argument("--debug", type=int, default=0) # Set 0-3 for different amounts of logs
-    ap.add_argument("--worker", type=str, default="") # For running in parallel; can be omitted
     args = ap.parse_args()
 
     global RESULTS_PATH
-    RESULTS_PATH = RESULTS_PATH_TEMPLATE % (args.run_name + args.worker)
+    RESULTS_PATH = RESULTS_PATH_TEMPLATE % args.run_name
 
     models = [
             (cotmodel("aligned"), load_aligned_model)
@@ -268,14 +266,6 @@ def main():
             (rawmodel("raw"), load_base_model)
         ]
 
-    run = None
-    if args.wandb:
-        import wandb
-        run = wandb.init(project="frit", name=args.run_name + args.worker, config={
-            "eval_per_dataset": args.per_dataset,
-            "model": args.model
-        })
-
     reports = evaluate_datasets(models=models, tokenizer=tokenizer, args=args)
 
     print("\n=== EVAL SUMMARY ===")
@@ -284,8 +274,6 @@ def main():
         for k, v in report.items():
             print(f"{k}: ", end="")
             print(" | ".join([f"{kk}={vv}" for kk, vv in v.items()]))
-    if run:
-        run.finish()
 
 if __name__ == "__main__":
     main()

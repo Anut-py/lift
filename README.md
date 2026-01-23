@@ -1,47 +1,53 @@
-# FRIT: Using Causal Importance to Improve Chain-of-Thought Faithfulness
+## LIFT: Likelihood-Based Intervention Faithfulness Training
 
-You can find our paper at [https://arxiv.org/pdf/2509.13334](https://arxiv.org/pdf/2509.13334).
+### Requirements
 
-## Prerequisites
+A Python environment with `pip` is required. PyTorch must already be installed on your system.
 
-Python and pip are required to run the code. You must have Pytorch installed on your system.
+### Installation and Configuration
 
-## Setup
-
-Clone this repository. Install the dependencies by running `pip -r /path/to/frit/requirements.txt`.
-
-Adjust hyperparameters, directories (particularly `DATA_DIR`) and any other configuration in `config.py` prior to running.
-
-If fine-tuning Mistral, you must go to the [Hugging Face page](https://huggingface.co/mistralai/Mistral-7B-v0.1), log in, and allow data collection as it is a gated model. Then, generate an access token in Hugging Face and store it in the environment variable `HF_TOKEN` prior to running the code.
-
-## Fine-tuning a model
-
-You can choose to run the full pipeline (more computational power/time) or use the pre-generated dataset (less computational power/time but less flexibility).
-
-### Running FRIT (full pipeline)
-
-Run the following on the command line:
+Clone the repository and install the dependencies:
 
 ```bash
-cd /path/to/frit
-python parallel_dpo.py
+pip -r /path/to/lift/requirements.txt
 ```
 
-This will perform the full FRIT pipeline end-to-end. The final fine-tuned model will be saved to a directory inside `config.CHECKPOINTS_DIR`.
+Before running any code, edit `config.py` to configure hyperparameters and paths. In particular, verify directory settings such as `DATA_DIR`.
 
-### Fine-tuning using pre-generated dataset
+## Model Fine-Tuning
 
-As an alternative, you may utilize the generated DPO triplets we have released. This takes far less computational power but, of course, you can't modify the parameters used to generate the triplets.
+LIFT supports two approaches to fine-tuning: running the full pipeline or training from a pre-generated dataset.
 
-First, make sure you have set the hyperparameters in `config.py` to the correct values (refer to our paper for the hyperparameters we used). Then, run the following on the command line:
+### End-to-End LIFT Pipeline
+
+To run the complete pipeline (this requires more compute and time), execute:
 
 ```bash
-cd /path/to/frit
-python dpo.py
+cd /path/to/lift
+python pipeline.py
 ```
 
-The final fine-tuned model will be saved to a directory inside `config.CHECKPOINTS_DIR`.
+This command runs the entire LIFT process end-to-end. The final fine-tuned model will be saved to a subdirectory inside `config.CHECKPOINTS_DIR`.
+
+### Fine-Tuning with a Pre-Generated Dataset
+
+As an alternative, you can fine-tune using the released SFT examples. This option requires significantly less computational power, but the data-generation parameters cannot be changed.
+
+First, set the hyperparameters in `config.py` to match the values reported in the paper. Then run:
+
+```bash
+cd /path/to/lift
+python todo.py
+```
+
+The resulting model will be saved to a directory under `config.CHECKPOINTS_DIR`.
 
 ## Evaluation
 
-Once you have created a fine-tuned model, run `python evaluation.py [OPTIONS]` to evaluate it. See the `main` function in the source code for details on command-line options you may pass it.
+After producing a fine-tuned model, evaluate it by running:
+
+```bash
+python evaluation.py [OPTIONS]
+```
+
+Refer to the `main` function in `evaluation.py` for details on the available command-line options.

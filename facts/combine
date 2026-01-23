@@ -1,2 +1,0 @@
-#!/bin/bash
-cat data/relations/* data/descriptions/* | grep -v '^$' > data/combined.log
