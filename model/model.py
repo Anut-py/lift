@@ -15,15 +15,15 @@ aligned_models = {}
 
 def get_model_name(large: bool):
     if MISTRAL:
-        return "mistralai/Mistral-Small-Instruct-2409" if large else "mistralai/Mistral-7B-Instruct-v0.3"
+        return "mistralai/Mistral-7B-Instruct-v0.3" if large else "" # no small mistral model 
     else:
-        return "Qwen/Qwen3-32B" if large else "Qwen/Qwen3-8B"
+        return "Qwen/Qwen3-8B" if large else "Qwen/Qwen3-4B-Instruct-2507"
 
 def get_model_name_aligned(large: bool):
     if MISTRAL:
-        return "Mistral-22B-aligned" if large else "Mistral-7B-aligned"
+        return "Mistral-7B-aligned" if large else ""
     else:
-        return "Qwen3-32B-aligned" if large else "Qwen3-8B-aligned"
+        return "Qwen3-8B-aligned" if large else "Qwen3-4B-aligned"
 
 def load_tokenizer(large: bool = None) -> PreTrainedTokenizer:
     if large is None:

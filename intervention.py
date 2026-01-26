@@ -26,9 +26,9 @@ def get_clusters(steps: list[str]) -> list[int]:
 # Given a list of steps, get the median related fact for each step
 @torch.no_grad()
 def get_facts(steps: list[str]) -> [str]:
-    clusters = get_clusters(steps)
+    step_clusters = get_clusters(steps)
     results = []
-    for step, cluster in zip(steps, clusters):
+    for step, cluster in zip(steps, step_clusters):
         candidates = clusters[cluster]
         fact_idx = least_similar([step], facts_tensor[candidates])[0].item()
         results.append(facts_text[candidates[fact_idx]])

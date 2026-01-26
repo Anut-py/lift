@@ -14,6 +14,8 @@ pip -r /path/to/lift/requirements.txt
 
 Before running any code, edit `config.py` to configure hyperparameters and paths. In particular, verify directory settings such as `DATA_DIR`.
 
+NOTE: The combination `MISTRAL=True` and `LARGE=False` has not been implemented.
+
 ## Model Fine-Tuning
 
 LIFT supports two approaches to fine-tuning: running the full pipeline or training from a pre-generated dataset.
@@ -33,11 +35,11 @@ This command runs the entire LIFT process end-to-end. The final fine-tuned model
 
 As an alternative, you can fine-tune using the released SFT examples. This option requires significantly less computational power, but the data-generation parameters cannot be changed.
 
-First, set the hyperparameters in `config.py` to match the values reported in the paper. Then run:
+First, set the hyperparameters in `config.py` to match the values reported in the paper. Ensure the correct model is selected. Then run:
 
 ```bash
 cd /path/to/lift
-python todo.py
+python finetune-only.py
 ```
 
 The resulting model will be saved to a directory under `config.CHECKPOINTS_DIR`.

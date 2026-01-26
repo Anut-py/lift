@@ -15,14 +15,13 @@ import os
 import pickle
 import time
 import random
-import fcntl
 from multiprocessing import Process, set_start_method
 import json
 import math
 import torch, gc
-import tempfile
-import shutil
 import logging
+from filelock import FileLock
+import shutil
 
 LOG = logging.getLogger(__name__)
 
@@ -41,6 +40,7 @@ DEBUG = 2
 LOCK_RETRY_DELAY = 0.05
 LOCK_RETRY_ATTEMPTS = 5
 PICKLE_PATH = os.path.join(out_subdir, "datagen.pkl")
+PICKLE_CHECKPOINT_PATH = os.path.join(out_subdir, "datagen_%s.pkl")
 PICKLE_ARCHIVE_PATH = os.path.join(out_subdir, "datagen%d.pkl")
 EPOCH_PATH = os.path.join(out_subdir, "current_epoch")
 
@@ -58,190 +58,31 @@ def clear_cuda():
 
 # ---------- robust pickle helpers ----------
 def safe_read_pickle(path):
-    """Read pickle, but if file is corrupted try .bak before giving up."""
-    try:
+    if not os.path.exists(path):
+        return []
+    with FileLock(path + ".lock"):
         with open(path, "rb") as f:
-            try:
-                fcntl.flock(f, fcntl.LOCK_SH)
-            except Exception:
-                pass
-            try:
-                data = pickle.load(f)
-            except EOFError:
-                LOG.warning("%s appears truncated/empty; attempting to load backup", path)
-                try:
-                    fcntl.flock(f, fcntl.LOCK_UN)
-                except Exception:
-                    pass
-                bak = path + ".bak"
-                if os.path.exists(bak):
-                    with open(bak, "rb") as fb:
-                        try:
-                            fcntl.flock(fb, fcntl.LOCK_SH)
-                        except Exception:
-                            pass
-                        try:
-                            data = pickle.load(fb)
-                            LOG.warning("Loaded backup %s instead", bak)
-                        except Exception:
-                            LOG.error("Backup %s also failed to load", bak)
-                            data = []
-                        finally:
-                            try:
-                                fcntl.flock(fb, fcntl.LOCK_UN)
-                            except Exception:
-                                pass
-                else:
-                    data = []
-            finally:
-                try:
-                    fcntl.flock(f, fcntl.LOCK_UN)
-                except Exception:
-                    pass
-        return data
-    except FileNotFoundError:
-        return []
-    except Exception:
-        LOG.exception("Unexpected error reading %s", path)
-        bak = path + ".bak"
-        if os.path.exists(bak):
-            try:
-                with open(bak, "rb") as fb:
-                    try:
-                        fcntl.flock(fb, fcntl.LOCK_SH)
-                    except Exception:
-                        pass
-                    try:
-                        data = pickle.load(fb)
-                        LOG.warning("Recovered from backup %s after read error", bak)
-                        return data
-                    finally:
-                        try:
-                            fcntl.flock(fb, fcntl.LOCK_UN)
-                        except Exception:
-                            pass
-            except Exception:
-                LOG.exception("Backup also failed: %s", bak)
-        return []
+            return pickle.load(f)
 
 def atomic_write_pickle(path, obj):
-    """Write pickle atomically (temp -> replace), fsync directory."""
-    dirpath = os.path.dirname(os.path.abspath(path)) or "."
-    os.makedirs(dirpath, exist_ok=True)
-    fd, tmppath = tempfile.mkstemp(dir=dirpath, prefix=os.path.basename(path) + ".tmp.")
-    try:
-        with os.fdopen(fd, "wb") as tf:
-            try:
-                # no lock needed on temp
-                pickle.dump(obj, tf)
-                tf.flush()
-                os.fsync(tf.fileno())
-            finally:
-                pass
-        # move temp -> path atomically
-        os.replace(tmppath, path)
-        # fsync directory to make rename durable
-        try:
-            dirfd = os.open(dirpath, os.O_DIRECTORY)
-            os.fsync(dirfd)
-            os.close(dirfd)
-        except Exception:
-            pass
-    finally:
-        if os.path.exists(tmppath):
-            try:
-                os.remove(tmppath)
-            except Exception:
-                pass
+    with FileLock(path + ".lock"):
+        with open(path, "wb") as f:
+            pickle.dump(obj, f)
 
 def safe_append_pickle(path, item):
-    """
-    Robust append:
-      - read current (shared/exclusive locking)
-      - create temp file and write new list to it
-      - fsync temp, then atomically replace target (os.replace)
-      - keep a .bak of previous file in case of failure
-    Returns new length.
-    """
-    # Read current list under shared lock first to minimize exclusive lock time
-    current = []
-    if os.path.exists(path):
-        try:
-            with open(path, "rb") as rf:
-                try:
-                    fcntl.flock(rf, fcntl.LOCK_SH)
-                except Exception:
-                    pass
-                try:
-                    try:
-                        current = pickle.load(rf)
-                    except EOFError:
-                        # truncated primary; try backup
-                        current = safe_read_pickle(path)
-                finally:
-                    try:
-                        fcntl.flock(rf, fcntl.LOCK_UN)
-                    except Exception:
-                        pass
-        except FileNotFoundError:
-            current = []
-
-    # Append the new item
-    current.append(item)
-
-    # Write to a temp file in same directory
-    dirpath = os.path.dirname(os.path.abspath(path)) or "."
-    os.makedirs(dirpath, exist_ok=True)
-    fd, tmppath = tempfile.mkstemp(dir=dirpath, prefix=os.path.basename(path) + ".tmp.")
-    try:
-        with os.fdopen(fd, "wb") as tf:
-            try:
-                try:
-                    fcntl.flock(tf, fcntl.LOCK_EX)
-                except Exception:
-                    pass
-                pickle.dump(current, tf)
-                tf.flush()
-                os.fsync(tf.fileno())
-                try:
-                    fcntl.flock(tf, fcntl.LOCK_UN)
-                except Exception:
-                    pass
-            finally:
-                pass
-
-        # Before replacing, optionally make a backup of the current file
-        bak = path + ".bak"
+    with FileLock(path + ".lock"):
         if os.path.exists(path):
-            try:
-                tmpbak = bak + f".tmp.{os.getpid()}"
-                os.replace(path, tmpbak)
-                os.replace(tmpbak, bak)
-            except Exception:
-                # fallback: try best-effort copy
-                try:
-                    shutil.copy2(path, bak)
-                except Exception:
-                    LOG.exception("Failed to create backup %s; continuing", bak)
+            with open(path, "rb") as f:
+                current = pickle.load(f)
+        else:
+            current = []
+    
+        current.append(item)
 
-        # Atomically replace the target with the temp file
-        os.replace(tmppath, path)
-        # fsync directory to ensure rename is durable
-        try:
-            dirfd = os.open(dirpath, os.O_DIRECTORY)
-            os.fsync(dirfd)
-            os.close(dirfd)
-        except Exception:
-            pass
+        with open(path, "wb") as f:
+            pickle.dump(current, f)
 
         return len(current)
-    finally:
-        # ensure no stray temp
-        if os.path.exists(tmppath):
-            try:
-                os.remove(tmppath)
-            except Exception:
-                pass
 
 # ---------- on-disk sample entries + work-queue helpers ----------
 def save_sample_entries_if_missing(path, entries):
@@ -675,12 +516,12 @@ def run_sft(gen_epoch, gpu_id=None):
 def gen_work_queue():
     import datagen
 
-    # Build deterministic sample_entries list from datagen.dataset_sources
     entries = []
-    # Ensure deterministic order: sort dataset names
     for dataset_name in sorted(datagen.dataset_sources.keys()):
         dataset = datagen.dataset_sources[dataset_name]
-        for entry in dataset:
+        indices = random.sample(range(len(dataset)), k=PER_DATASET)
+        for i in indices:
+            entry = dataset[i]
             entries.append(datagen.format_entry(entry, dataset_name))
 
     # Save/load deterministically to SAMPLE_ENTRIES_PATH (so resume uses same ordering)
@@ -707,6 +548,7 @@ if __name__ == "__main__":
         clear_cuda()
 
         original_count = len(safe_read_pickle(PICKLE_PATH))
+        saved_count = original_count
 
         if original_count < TARGET_EXAMPLES:
             # spawn workers for this epoch
@@ -729,13 +571,18 @@ if __name__ == "__main__":
                 while any(p.is_alive() for p in procs):
                     now = time.time()
                     elapsed = now - start_time
-                    count = len(safe_read_pickle(PICKLE_PATH))
+                    vals = safe_read_pickle(PICKLE_PATH)
+                    count = len(vals)
 
                     # compute rate (examples/sec)
                     rate = (count - original_count) / max(elapsed, 1e-6)
                     # estimate remaining time
                     remaining = max(TARGET_EXAMPLES - count, 0)
                     eta = remaining / max(rate, 1e-6)
+
+                    if (count - saved_count) >= 10:
+                        saved_count = count
+                        atomic_write_pickle(PICKLE_CHECKPOINT_PATH % datetime.now(eastern).strftime('%Y-%m-%d %H:%M:%S'), vals)
 
                     print(f"[Monitor] epoch {gen_epoch}: {count}/{TARGET_EXAMPLES} examples generated "
                           f"({elapsed:.1f}s elapsed, ETA {eta:.1f}s)")
