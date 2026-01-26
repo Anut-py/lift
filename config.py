@@ -30,7 +30,7 @@ TARGET_EXAMPLES = 1000
 PRELIM_TEMP = [0.1, 0.5, 0.0, 0.5][idx]
 VARIOUS_TEMP = [0.2, 1.6, 0.0, 1.6][idx]
 
-LAMBDA = 0.0 # Used for ablations
+LAMBDA = 1.0 # Used for ablations
 # Weights and thresholds per dataset (order for those with 3 values: gsm8k, strategyqa/commonsenseqa, svamp/asdiv)
 ANSWER_WEIGHT = [x * LAMBDA for x in [
     [1.8, 0.4, 0.8],
