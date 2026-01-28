@@ -12,6 +12,17 @@ Clone the repository and install the dependencies:
 pip -r /path/to/lift/requirements.txt
 ```
 
+#### Embeddings
+
+The file `data-files/embeddings.pt` is necessary to run the LIFT pipeline (it contains BGI embeddings of all facts in the corpus) but is omitted because of file size limits. You can generate it with the following:
+
+```bash
+cd /path/to/lift
+python embeddings.py
+```
+
+#### Configuration
+
 Before running any code, edit `config.py` to configure hyperparameters and paths. In particular, verify directory settings such as `DATA_DIR`.
 
 NOTE: The combination `MISTRAL=True` and `LARGE=False` has not been implemented.
