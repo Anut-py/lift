@@ -6,7 +6,7 @@ from datasets import load_dataset
 
 from model.model import load_base_model, load_aligned_model, load_tokenizer
 from intervention import intervention
-from augmentation import generate_cot_completion, causal_importance, basic_causal_importance, answer_probability, answer_probability_raw
+from scoring import generate_cot_completion, causal_importance, basic_causal_importance, answer_probability, answer_probability_raw
 from collections import defaultdict
 from util import prompt_model_answer
 from transformers import pipeline

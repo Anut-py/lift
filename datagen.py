@@ -4,7 +4,7 @@ from copy import deepcopy
 import random
 import traceback
 from tqdm import tqdm
-from augmentation import various_traces, generate_cot_completion
+from scoring import various_traces, generate_cot_completion
 from intervention import intervention
 from model.model import load_aligned_model, load_tokenizer
 from util import prompt_model_answer
