@@ -1,14 +1,14 @@
 import os
 
 # Model size and family selection
-LARGE = False   # False => 4B, True => 7-8B
-MISTRAL = False # False => Qwen, True => Mistral
+LARGE = True   # False => 4B, True => 7-8B
+MISTRAL = True # False => Qwen, True => Mistral
 
 # idx mapping: (large: mistral->0, qwen->1) ; (small: mistral->2, qwen->3)
 idx = ((3, 2), (1, 0))[LARGE][MISTRAL]
 
 # Base paths (adjust BASE_DIR to the parent directory where this repo lives)
-BASE_DIR = "/root"
+BASE_DIR = "/home/ubuntu"
 CACHE_DIR = os.path.join(BASE_DIR, "hf_cache")
 CHECKPOINTS_DIR = os.path.join(BASE_DIR, "hf_checkpoints")
 
@@ -16,7 +16,7 @@ OUT_DIR = os.path.join(BASE_DIR, "lift-out")           # must exist before runni
 DATA_DIR = os.path.join(BASE_DIR, "lift", "data-files") # e.g. /path/to/lift/data-files
 
 GPUS = 1
-PER_GPU = 3
+PER_GPU = 2
 
 # per-model subdirectories
 _model_tag = "mistral" if MISTRAL else "qwen"
@@ -40,7 +40,7 @@ ANSWER_WEIGHT = [x * LAMBDA for x in [
 ][idx]]
 SCORE_ANSWER_THRESHOLD = [0.4, 0.7, 0.0, 0.7][idx]
 SAMPLE_WEIGHT = [
-    [1.0, 1.0, 1.0],
+    [1.0, 2.0, 1.0],
     [1.5, 1.0, 3.0],
     [0.0, 0.0, 0.0],
     [1.5, 1.0, 3.0],
@@ -56,5 +56,5 @@ BATCH_SIZE = [4, 2, 0, 2][idx]
 EPOCHS = [1, 1, 0, 1][idx]
 LR = [7e-5, 3e-4, 0, 3e-4][idx]
 GRAD_ACCUM_STEPS = 2
-MAX_LENGTH = 2048
+MAX_LENGTH = 1024
 KL_LAMBDA = [0.8, 2.0, 0.0, 2.0][idx]

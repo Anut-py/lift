@@ -419,6 +419,7 @@ def run_sft(gen_epoch, gpu_id=None):
             super().__init__(*args, **kwargs)
             self.ref_model = ref_model
             self.kl_lambda = kl_lambda
+            self.step = 0
             if self.ref_model is not None:
                 self.ref_model.to(self.model.device)
                 self.ref_model.eval()
@@ -477,7 +478,11 @@ def run_sft(gen_epoch, gpu_id=None):
                 # kl_weights = (1.0 - weights).clamp(min=0.0)
                 weighted_kl = per_sample_kl.mean()
                 total_loss = total_loss + self.kl_lambda * weighted_kl
-        
+
+            self.step += 1
+            if (self.step % 5) == 0:
+                clear_cuda()
+            
             return (total_loss, outputs) if return_outputs else total_loss
     
     
