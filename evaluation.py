@@ -4,7 +4,7 @@
 import argparse
 from datasets import load_dataset
 
-from model.model import load_base_model, load_aligned_model, load_tokenizer
+from model.model import load_baseline_model, load_aligned_model, load_tokenizer
 from intervention import intervention
 from scoring import generate_cot_completion, causal_importance, basic_causal_importance, answer_probability, answer_probability_raw
 from collections import defaultdict
@@ -254,16 +254,16 @@ def main():
     models = [
             (cotmodel("aligned"), load_aligned_model)
         ] if args.model == "aligned" else [
-            (cotmodel("base"), load_base_model)
+            (cotmodel("base"), load_baseline_model)
         ] if args.model == "base" else [
             (rawmodel("raw"), load_base_model)
         ] if args.model == "raw" else [
             (cotmodel("aligned"), load_aligned_model),
-            (cotmodel("base"), load_base_model)
+            (cotmodel("base"), load_baseline_model)
         ] if args.model == "both" else [
             (cotmodel("aligned"), load_aligned_model),
-            (cotmodel("base"), load_base_model),
-            (rawmodel("raw"), load_base_model)
+            (cotmodel("base"), load_baseline_model),
+            (rawmodel("raw"), load_baseline_model)
         ]
 
     reports = evaluate_datasets(models=models, tokenizer=tokenizer, args=args)

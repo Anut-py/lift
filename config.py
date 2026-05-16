@@ -54,7 +54,7 @@ SCORE_THRESHOLD = [
 
 BATCH_SIZE = [4, 2, 0, 2][idx]
 EPOCHS = [1, 1, 0, 1][idx]
-LR = [7e-5, 3e-4, 0, 5e-5][idx]
+LR = [7e-5, 3e-4, 0, 1e-5][idx]
 GRAD_ACCUM_STEPS = 2
 MAX_LENGTH = 2048
 KL_LAMBDA = [0.8, 2.0, 0.0, 5.0][idx]

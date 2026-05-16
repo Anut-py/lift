@@ -22,7 +22,10 @@ import torch, gc
 import logging
 from filelock import FileLock
 import shutil
+import random
 
+random.seed(42)
+torch.manual_seed(42)
 
 LOG = logging.getLogger(__name__)
 
@@ -313,8 +316,6 @@ def run_sft(gen_epoch, gpu_id=None):
             new_entry['mult'] = pmap[entry['prompt']][2] if entry['prompt'] in pmap else 1.0
             kept.append(new_entry)
 
-    import random
-    random.seed(42)
     random.shuffle(kept)
     
     from model.model import load_tokenizer, load_aligned_model, load_base_model
@@ -483,7 +484,6 @@ def run_sft(gen_epoch, gpu_id=None):
     
     
     training_args = TrainingArguments(
-        output_dir=out_subdir + "/training-output",
         per_device_train_batch_size=BATCH_SIZE,
         num_train_epochs=EPOCHS,
         learning_rate=LR,
