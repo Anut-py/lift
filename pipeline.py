@@ -23,6 +23,7 @@ import logging
 from filelock import FileLock
 import shutil
 
+
 LOG = logging.getLogger(__name__)
 
 # user config should provide these
@@ -352,7 +353,7 @@ def run_sft(gen_epoch, gpu_id=None):
         avg = 0
         for trace, score, step in e.get("samples", []):
             weight = (float(score) - mn) / denom
-            weight = (0.05 + 0.95 * weight) ** (1/2)
+            weight = 0.05 + 0.95 * weight
             add_ans = weight >= SCORE_ANSWER_THRESHOLD
             weight *= e['mult']
             avg += weight

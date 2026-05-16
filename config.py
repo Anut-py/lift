@@ -8,7 +8,7 @@ MISTRAL = False # False => Qwen, True => Mistral
 idx = ((3, 2), (1, 0))[LARGE][MISTRAL]
 
 # Base paths (adjust BASE_DIR to the parent directory where this repo lives)
-BASE_DIR = "/root"
+BASE_DIR = "/home/ubuntu"
 CACHE_DIR = os.path.join(BASE_DIR, "hf_cache")
 CHECKPOINTS_DIR = os.path.join(BASE_DIR, "hf_checkpoints")
 
@@ -31,12 +31,12 @@ PRELIM_TEMP = [0.1, 0.5, 0.0, 0.5][idx]
 VARIOUS_TEMP = [0.2, 1.6, 0.0, 1.6][idx]
 
 LAMBDA = 1.0 # Used for ablations
-# Weights and thresholds per dataset (order for those with 3 values: gsm8k, strategyqa/commonsenseqa, svamp/asdiv)
+# Weights and thresholds per dataset (order for each: gsm8k, strategyqa/commonsenseqa, svamp/asdiv)
 ANSWER_WEIGHT = [x * LAMBDA for x in [
     [1.8, 0.4, 0.8],
     [1.0, 2.5, 3.0],
     [0.0, 0.0, 0.0],
-    [1.0, 2.5, 3.0],
+    [2.2, 3.0, 3.8],
 ][idx]]
 SCORE_ANSWER_THRESHOLD = [0.4, 0.7, 0.0, 0.7][idx]
 SAMPLE_WEIGHT = [
@@ -49,12 +49,12 @@ SCORE_THRESHOLD = [
     (0.5, 12),
     (0.5, 12),
     (0, 0),
-    (0.5, 12),
+    (0.5, 8),
 ][idx]
 
 BATCH_SIZE = [4, 2, 0, 2][idx]
 EPOCHS = [1, 1, 0, 1][idx]
-LR = [7e-5, 3e-4, 0, 3e-4][idx]
+LR = [7e-5, 3e-4, 0, 5e-5][idx]
 GRAD_ACCUM_STEPS = 2
 MAX_LENGTH = 2048
-KL_LAMBDA = [0.8, 2.0, 0.0, 2.0][idx]
+KL_LAMBDA = [0.8, 2.0, 0.0, 5.0][idx]
