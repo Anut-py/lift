@@ -1,8 +1,8 @@
 import os
 
 # Model size and family selection
-LARGE = False   # False => 4B, True => 7-8B
-MISTRAL = False # False => Qwen, True => Mistral
+LARGE = True   # False => 4B, True => 7-8B
+MISTRAL = True # False => Qwen, True => Mistral
 
 # idx mapping: (large: mistral->0, qwen->1) ; (small: mistral->2, qwen->3)
 idx = ((3, 2), (1, 0))[LARGE][MISTRAL]
@@ -46,15 +46,15 @@ SAMPLE_WEIGHT = [
     [1.5, 1.0, 3.0],
 ][idx]
 SCORE_THRESHOLD = [
-    (0.5, 12),
-    (0.5, 12),
+    (0.5, 8),
+    (0.5, 8),
     (0, 0),
     (0.5, 8),
 ][idx]
 
 BATCH_SIZE = [4, 2, 0, 2][idx]
 EPOCHS = [1, 1, 0, 1][idx]
-LR = [7e-5, 3e-4, 0, 1e-5][idx]
+LR = [1e-5, 1e-5, 0, 1e-5][idx]
 GRAD_ACCUM_STEPS = 2
 MAX_LENGTH = 2048
 KL_LAMBDA = [0.8, 2.0, 0.0, 5.0][idx]
