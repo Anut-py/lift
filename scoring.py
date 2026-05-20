@@ -123,7 +123,7 @@ def causal_importance(prompt, R_meta, a, step_num, model, tokenizer, temp=0.2, d
     if debug >= 1:
         print(f"[DEBUG1] New answer after edit: '{new_ans}' vs original '{a}'")
 
-    return 1 - answer_probability(prompt, new_meta, a, model, tokenizer, debug=debug)[1]
+    return answer_probability(prompt, R_meta, a, model, tokenizer, debug=debug)[0] - answer_probability(prompt, new_meta, a, model, tokenizer, debug=debug)[0]
 
 # step_num is zero-indexed
 def basic_causal_importance(prompt, R_meta, a, step_num, model, tokenizer, debug=0):
@@ -143,7 +143,7 @@ def basic_causal_importance(prompt, R_meta, a, step_num, model, tokenizer, debug
     if debug >= 2:
         print(f"[DEBUG2] New full answer trace: {new_meta}")
 
-    return 1 - answer_probability(prompt, new_meta, a, model, tokenizer, debug=debug)[1]
+    return answer_probability(prompt, R_meta, a, model, tokenizer, debug=debug)[0] - answer_probability(prompt, new_meta, a, model, tokenizer, debug=debug)[0]
 
 @torch.no_grad()
 def answer_probability(prompt, R_meta, a, model, tokenizer, debug=0):
